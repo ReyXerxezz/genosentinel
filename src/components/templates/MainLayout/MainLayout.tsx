@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { patientsApi, clinicalRecordsApi, tumorTypesApi } from '../../../libs/api';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { patientsApi, clinicalRecordsApi, tumorTypesApi, authApi } from '../../../libs/api';
 import type { MainLayoutProps } from './MainLayout.types';
 
 interface Stats {
@@ -12,16 +12,30 @@ interface Stats {
 
 export const MainLayout: React.FC<MainLayoutProps> = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({
     patients: 0,
     clinicalRecords: 0,
     tumorTypes: 0,
     loading: true,
   });
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     fetchStats();
   }, []);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await authApi.logout();
+    } catch (err) {
+      // Ignorar errores al cerrar sesión
+    } finally {
+      setLoggingOut(false);
+      navigate('/', { replace: true });
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -44,9 +58,9 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
   };
 
   const navigation = [
-    { name: 'Pacientes', href: '/patients', icon: '👥' },
-    { name: 'Registros Clínicos', href: '/clinical-records', icon: '📋' },
-    { name: 'Tipos de Tumor', href: '/tumor-types', icon: '🔬' },
+    { name: 'Pacientes', href: '/app/patients', icon: '👥' },
+    { name: 'Registros Clínicos', href: '/app/clinical-records', icon: '📋' },
+    { name: 'Tipos de Tumor', href: '/app/tumor-types', icon: '🔬' },
   ];
 
   const isActive = (path: string) => {
@@ -93,6 +107,13 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
                 </svg>
                 Actualizar
               </button>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-red-600 hover:text-red-800 transition-colors flex items-center gap-2"
+                disabled={loggingOut}
+              >
+                {loggingOut ? 'Saliendo...' : 'Cerrar sesión'}
+              </button>
             </div>
           </div>
         </div>
@@ -137,7 +158,7 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
                 ) : (
                   <div className="space-y-3">
                     <Link
-                      to="/patients"
+                      to="/app/patients"
                       className="flex justify-between items-center text-sm p-2 rounded-lg hover:bg-gray-50 transition-colors group"
                     >
                       <span className="text-gray-600 group-hover:text-gray-900">
@@ -149,7 +170,7 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
                     </Link>
                     
                     <Link
-                      to="/clinical-records"
+                      to="/app/clinical-records"
                       className="flex justify-between items-center text-sm p-2 rounded-lg hover:bg-gray-50 transition-colors group"
                     >
                       <span className="text-gray-600 group-hover:text-gray-900">
@@ -161,7 +182,7 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
                     </Link>
                     
                     <Link
-                      to="/tumor-types"
+                      to="/app/tumor-types"
                       className="flex justify-between items-center text-sm p-2 rounded-lg hover:bg-gray-50 transition-colors group"
                     >
                       <span className="text-gray-600 group-hover:text-gray-900">
@@ -182,19 +203,19 @@ export const MainLayout: React.FC<MainLayoutProps> = () => {
                 </h3>
                 <div className="space-y-2">
                   <Link
-                    to="/patients"
+                    to="/app/patients"
                     className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <span>➕</span> Nuevo Paciente
                   </Link>
                   <Link
-                    to="/clinical-records"
+                    to="/app/clinical-records"
                     className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <span>📝</span> Nuevo Registro
                   </Link>
                   <Link
-                    to="/tumor-types"
+                    to="/app/tumor-types"
                     className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
                   >
                     <span>🔬</span> Nuevo Tipo

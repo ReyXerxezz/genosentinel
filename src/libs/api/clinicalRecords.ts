@@ -22,31 +22,31 @@ interface ClinicalRecord {
 
 export const clinicalRecordsApi = {
   async getAll(): Promise<ClinicalRecord[]> {
-    const response = await apiClient.get<ApiResponse<ClinicalRecord[]>>('/clinical-records');
+    const response = await apiClient.get<ApiResponse<ClinicalRecord[]>>('/clinica/clinical-records');
     return response.data;
   },
 
   async getById(id: string): Promise<ClinicalRecord> {
-    const response = await apiClient.get<ApiResponse<ClinicalRecord>>(`/clinical-records/${id}`);
+    const response = await apiClient.get<ApiResponse<ClinicalRecord>>(`/clinica/clinical-records/${id}`);
     return response.data;
   },
 
   async getByPatientId(patientId: string): Promise<ClinicalRecord[]> {
-    const response = await apiClient.get<ApiResponse<ClinicalRecord[]>>(`/patients/${patientId}/clinical-records`);
+    const response = await apiClient.get<ApiResponse<ClinicalRecord[]>>(`/clinica/patients/${patientId}/clinical-records`);
     return response.data;
   },
 
   async create(record: Omit<ClinicalRecord, 'id'>): Promise<ClinicalRecord> {
-    const response = await apiClient.post<ApiResponse<ClinicalRecord>>('/clinical-records', record);
+    const response = await apiClient.post<ApiResponse<ClinicalRecord>>('/clinica/clinical-records', record);
     return response.data;
   },
 
   async update(id: string, record: Partial<ClinicalRecord>): Promise<ClinicalRecord> {
-    const response = await apiClient.put<ApiResponse<ClinicalRecord>>(`/clinical-records/${id}`, record);
+    const response = await apiClient.put<ApiResponse<ClinicalRecord>>(`/clinica/clinical-records/${id}`, record);
     return response.data;
   },
 
   async delete(id: string | number): Promise<void> {
-    await apiClient.delete(`/clinical-records/${id}`);
+    await apiClient.delete(`/clinica/clinical-records/${id}`);
   }
 };

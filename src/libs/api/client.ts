@@ -1,5 +1,5 @@
 const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/clinica';
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
 
 export class ApiClient {
   private baseURL: string;
@@ -18,6 +18,7 @@ export class ApiClient {
     try {
       const response = await fetch(url, {
         ...options,
+        credentials: options?.credentials ?? 'include',
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers,
@@ -29,6 +30,16 @@ export class ApiClient {
           error: 'Unknown error', 
           message: response.statusText 
         }));
+
+        // Si estamos autenticados y llega 401 en rutas protegidas, redirigimos a login
+        if (response.status === 401) {
+          const path = window.location?.pathname || '';
+          const isAuthPath = path === '/' || path.startsWith('/login') || path.startsWith('/register');
+          if (!isAuthPath) {
+            console.warn('401 detectado, redirigiendo a login');
+            window.location.assign('/');
+          }
+        }
         
         console.error('API Error Response:', {
           status: response.status,
