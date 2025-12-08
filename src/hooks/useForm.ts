@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 
-type FormErrors<T> = Partial<Record<keyof T | 'submit', string>>;
+type FormErrors<T> = Partial<Record<keyof T, string>> & { submit?: string };
 
 interface UseFormResult<T> {
   values: T;
@@ -46,7 +46,7 @@ export const useForm = <T extends Record<string, any>>(
         await onSubmit(values);
       } catch (error) {
         if (error instanceof Error) {
-          setErrors({ submit: error.message });
+          setErrors((prev) => ({ ...prev, submit: error.message }));
         }
       }
     };
