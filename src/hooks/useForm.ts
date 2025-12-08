@@ -1,21 +1,23 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 
+type FormErrors<T> = Partial<Record<keyof T | 'submit', string>>;
+
 interface UseFormResult<T> {
   values: T;
-  errors: Partial<Record<keyof T, string>>;
+  errors: FormErrors<T>;
   handleChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleSubmit: (onSubmit: (values: T) => Promise<void> | void) => (e: FormEvent<HTMLFormElement>) => Promise<void>;
   reset: () => void;
   setFieldValue: (name: keyof T, value: T[keyof T]) => void;
   setValues: (values: T) => void;
-  setErrors: (errors: Partial<Record<keyof T, string>>) => void;
+  setErrors: (errors: FormErrors<T>) => void;
 }
 
 export const useForm = <T extends Record<string, any>>(
   initialValues: T
 ): UseFormResult<T> => {
   const [values, setValues] = useState<T>(initialValues);
-  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+  const [errors, setErrors] = useState<FormErrors<T>>({});
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -44,7 +46,7 @@ export const useForm = <T extends Record<string, any>>(
         await onSubmit(values);
       } catch (error) {
         if (error instanceof Error) {
-          setErrors({ submit: error.message } as Partial<Record<keyof T, string>>);
+          setErrors({ submit: error.message });
         }
       }
     };
