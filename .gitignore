@@ -1,0 +1,29 @@
+# Environment
+.env
+*.env
+
+# Node
+node_modules
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Vite / Builds
+dist
+dist-ssr
+
+# Logs
+logs
+*.log
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Others
+*.local
