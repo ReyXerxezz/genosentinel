@@ -1,12 +1,19 @@
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/clinica';
+
 export class ApiClient {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://localhost:3000') {
-    this.baseURL = baseURL;
+  constructor(baseURL: string = DEFAULT_API_BASE_URL) {
+    // Normalize to avoid double slashes when concatenating endpoints
+    this.baseURL = baseURL.replace(/\/+$/, '');
   }
 
   async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
+    const normalizedEndpoint = endpoint.startsWith('/')
+      ? endpoint
+      : `/${endpoint}`;
+    const url = `${this.baseURL}${normalizedEndpoint}`;
     
     try {
       const response = await fetch(url, {
