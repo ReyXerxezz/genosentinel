@@ -4,6 +4,7 @@ import { FormField } from '../../components/molecules/FormField';
 import { Button } from '../../components/atoms/Button';
 import { useForm } from '../../hooks/useForm';
 import { authApi } from '../../libs/api/auth';
+import { ApiError } from '../../libs/api/client';
 
 interface RegisterForm {
   name: string;
@@ -27,6 +28,12 @@ const RegisterPage: React.FC = () => {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const showAlert = (type: 'success' | 'error', message: string, timeout = 3000) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), timeout);
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -84,8 +91,27 @@ const RegisterPage: React.FC = () => {
       const ttl = response.expires_in_seconds ?? response.data?.expires_in_seconds;
       setExpiresIn(ttl ?? null);
       setStep('verify');
+      showAlert('success', response.detail || 'Revisa tu correo para completar la verificación.');
     } catch (err) {
-      setErrors({ submit: 'No pudimos crear la cuenta. Intenta de nuevo.' });
+      if (err instanceof ApiError) {
+        const code = err.body?.error_code;
+        if (code === 'VALIDATION_ERROR') {
+          const validationErrors = err.body?.errors || {};
+          const mappedErrors: Record<string, string> = {};
+          Object.entries(validationErrors).forEach(([field, msgs]) => {
+            mappedErrors[field] = (msgs as string[]).join(', ');
+          });
+          setErrors(mappedErrors);
+          return;
+        }
+        if (code === 'ACCOUNT_ALREADY_VERIFIED') {
+          setErrors({ submit: 'Cuenta ya verificada. Inicia sesión.' });
+          return;
+        }
+        setErrors({ submit: 'No pudimos crear la cuenta. Intenta de nuevo.' });
+      } else {
+        setErrors({ submit: 'No pudimos crear la cuenta. Intenta de nuevo.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -114,9 +140,22 @@ const RegisterPage: React.FC = () => {
         return;
       }
 
-      navigate('/', { replace: true });
+      showAlert('success', response.detail || 'Cuenta verificada correctamente. Redirigiendo...');
+      setTimeout(() => navigate('/', { replace: true }), 1000);
     } catch (err) {
-      setCodeError('No pudimos verificar el código. Intenta de nuevo.');
+      if (err instanceof ApiError) {
+        const code = err.body?.error_code;
+        const map: Record<string, string> = {
+          CODE_COOKIE_MISSING: 'Sesión de verificación expirada. Repite el registro.',
+          CODE_COOKIE_INVALID: 'Sesión de verificación inválida. Repite el registro.',
+          CODE_MISMATCH: 'Código incorrecto.',
+          CODE_RECORD_MISSING: 'No hay un registro de código vigente.',
+          CODE_EXPIRED: 'Código expirado. Solicita uno nuevo.',
+        };
+        setCodeError(map[code] ?? 'No pudimos verificar el código.');
+      } else {
+        setCodeError('No pudimos verificar el código. Intenta de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -131,14 +170,14 @@ const RegisterPage: React.FC = () => {
       setExpiresIn(ttl ?? null);
       setCode('');
       setRemaining(ttl ?? null);
+      showAlert('success', response.detail || 'Código reenviado. Revisa tu correo.');
     } catch (err: any) {
-      // Map resend errors
       const map: Record<string, string> = {
         CODE_REFRESH_MISSING: 'Sesión de verificación expirada. Repite el registro.',
         CODE_REFRESH_INVALID: 'Sesión de verificación inválida. Repite el registro.',
         CODE_REFRESH_USER_NOT_FOUND: 'No encontramos tu registro. Repite el registro.',
       };
-      const apiErr = (err as any)?.error_code;
+      const apiErr = (err instanceof ApiError ? err.body?.error_code : undefined) || err?.error_code;
       setCodeError(map[apiErr] ?? 'No pudimos reenviar el código.');
     } finally {
       setLoading(false);
@@ -157,6 +196,17 @@ const RegisterPage: React.FC = () => {
   if (step === 'verify') {
     return (
       <div className="space-y-4">
+        {alert && (
+          <div
+            className={`rounded-lg border px-3 py-2 text-sm ${
+              alert.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            {alert.message}
+          </div>
+        )}
         <div className="space-y-1">
           <p className="text-sm text-gray-600">
             Ingresa el código enviado a tu correo.
@@ -207,6 +257,17 @@ const RegisterPage: React.FC = () => {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(handleRegister)}>
+      {alert && (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            alert.type === 'success'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}
+        >
+          {alert.message}
+        </div>
+      )}
       <FormField
         label="Nombre"
         name="name"

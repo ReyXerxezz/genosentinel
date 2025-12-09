@@ -4,6 +4,7 @@ import { FormField } from '../../components/molecules/FormField';
 import { Button } from '../../components/atoms/Button';
 import { useForm } from '../../hooks/useForm';
 import { authApi } from '../../libs/api/auth';
+import { ApiError } from '../../libs/api/client';
 
 interface LoginForm {
   email: string;
@@ -17,6 +18,12 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const showAlert = (type: 'success' | 'error', message: string, timeout = 3000) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), timeout);
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,7 +45,6 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await authApi.login(formValues);
-
       if (response.error_code === 'INVALID_CREDENTIALS') {
         setErrors({ submit: 'Credenciales inválidas.' });
         return;
@@ -49,9 +55,25 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      navigate('/app/patients', { replace: true });
-    } catch (err) {
-      setErrors({ submit: 'No pudimos iniciar sesión. Intenta de nuevo.' });
+      const detail = response.detail || response.message || 'Inicio de sesión exitoso.';
+      showAlert('success', detail);
+      setTimeout(() => navigate('/app/patients', { replace: true }), 800);
+    } catch (err: any) {
+      if (err instanceof ApiError) {
+        const code = err.body?.error_code;
+        const detail = err.body?.detail || err.message;
+        if (code === 'INVALID_CREDENTIALS') {
+          setErrors({ submit: 'Credenciales inválidas.' });
+          return;
+        }
+        if (code === 'ACCOUNT_NOT_VERIFIED') {
+          setErrors({ submit: 'Cuenta no verificada. Revisa tu correo.' });
+          return;
+        }
+        setErrors({ submit: 'No pudimos iniciar sesión. Intenta de nuevo.' });
+      } else {
+        setErrors({ submit: 'No pudimos iniciar sesión. Intenta de nuevo.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -59,6 +81,17 @@ const LoginPage: React.FC = () => {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      {alert && (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            alert.type === 'success'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}
+        >
+          {alert.message}
+        </div>
+      )}
       <FormField
         label="Email"
         name="email"

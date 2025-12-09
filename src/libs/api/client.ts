@@ -1,6 +1,21 @@
 const DEFAULT_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api';
 
+export class ApiError extends Error {
+  status: number;
+  statusText: string;
+  url: string;
+  body: any;
+
+  constructor(status: number, statusText: string, url: string, body: any, message?: string) {
+    super(message ?? statusText);
+    this.status = status;
+    this.statusText = statusText;
+    this.url = url;
+    this.body = body;
+  }
+}
+
 export class ApiClient {
   private baseURL: string;
 
@@ -48,7 +63,13 @@ export class ApiClient {
           error: errorData
         });
         
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new ApiError(
+          response.status,
+          response.statusText,
+          url,
+          errorData,
+          errorData.message || errorData.detail || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
