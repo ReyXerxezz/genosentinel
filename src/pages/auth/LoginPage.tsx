@@ -61,7 +61,6 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       if (err instanceof ApiError) {
         const code = err.body?.error_code;
-        const detail = err.body?.detail || err.message;
         if (code === 'INVALID_CREDENTIALS') {
           setErrors({ submit: 'Credenciales inválidas.' });
           return;
